@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<canvas height="400" width="800">
+	<attribute name="min" value="-20"/>
+	<attribute name="max" value="50"/>
+	<attribute name="numspan" value="${max-min}"/>
+	<attribute name="currentidx" value="0"/>
+	<attribute name="currenttgt" value="0"/>
+	<attribute name="score" value="0"/>
+	<attribute name="time" value="120"/>
+	<attribute name="gamestate" value="'start'"/>
+	
+	<class name="numberbutton" extends="button" text="${this.number}" height="40" width="40">
+	  <attribute name="number"/>
+	  
+	  <handler name="onclick">
+        scoreupdate.flashamt.stop();
+	    if(this.number == digits[canvas.currentidx])
+	    {
+           this.setAttribute("enabled", false);
+           this.animate('opacity', 0.05, 1000, false);
+	       scoreupdate.setAttribute("fgcolor", 0x009900);
+	       scoreupdatetext.setAttribute("text", "+"+canvas.time);
+	       canvas.setAttribute("score", canvas.score + canvas.time);
+           canvas.setAttribute("currentidx", canvas.currentidx+1);
+           canvas.nextNumber();
+	    }
+	    else
+	    {
+	       scoreupdate.setAttribute("fgcolor", 0xFF0000);
+	       scoreupdatetext.setAttribute("text", "-5");
+	       canvas.setAttribute("score", canvas.score-5);
+	    }
+        scoreupdate.flashamt.doStart();
+	  </handler>
+	  
+	</class>
+	
+	<!-- The whole visualization -->
+	<view>
+	  <view id="buttonpanel" width="300">
+	   <handler name="oninit">
+	      for(var i=0; i &lt;= canvas.max; i++)
+	      {
+	        var x = new lz.numberbutton(this);
+	        x.setAttribute("number", i);
+	      }
+	   </handler>
+       <wrappinglayout axis="x" spacing="5"/>
+	  </view>
+	  <state apply="${canvas.gamestate=='start'}">
+	    <button onclick="canvas.begin()">Play Speedmath</button>
+	  </state>
+	  <state apply="${canvas.gamestate=='play'}">
+	    <view>
+
+	    <view id="problemview" fontsize="18" fontstyle="bold">
+	       <text>Problem:</text>
+	       <text id="problem"/>
+	       <simplelayout axis="x"/>
+        </view>
+	    <view id="scoreview" fontsize="16">
+	       <text text="${'Your score: ' + canvas.score}" />
+	       <view id="scoreupdate" fontstyle="bold">
+	         <text id="scoreupdatetext"/>
+	         <animatorgroup name="flashamt" process="simultaneous"
+                   start="false" duration="2000" >
+      			<animator attribute="x" from="${scoreview.x+125}"  to="${scoreview.x+250}" />
+      			<animator attribute="opacity" from="1" to="0"/>
+	    	 </animatorgroup>         
+	       </view>
+	    </view>
+	    <view id="timerview" fontsize="16">
+	       <text text="${'Time left: ' + canvas.time + ' seconds'}"/>
+	    </view>
+	    <simplelayout axis="y"/>
+
+	    </view>
+	  </state>
+	  <state apply="${canvas.gamestate=='over'}">
+	    <view id="scoreview2" fontsize="24">
+	       <text text="${'GAME OVER!! Your final score: ' + canvas.score}"/>
+	    </view>
+	  </state>
+	  
+	  <simplelayout axis="x"/>
+   </view>
+   
+   <script>
+      // --- Sort an array of integers
+      var digits = new Array();
+      var j;
+      var k;
+      for(var i=canvas.min; i &lt;= canvas.max; i++)
+      {
+         digits[i] = i;
+      }
+      for(var i=0; i &lt; 10000; i++)
+      {
+         j = Math.floor(Math.random()*canvas.max*12) % canvas.numspan+1;
+         k = Math.floor(Math.random()*canvas.max*12) % canvas.numspan+1;
+         
+         var tmp = digits[j];
+         digits[j] = digits[k];
+         digits[k] = tmp;
+      }
+      
+      var tmp = digits[j];
+      digits[j] = digits[0];
+      digits[0] = tmp;
+            
+   </script>
+
+   <method name="begin">
+     canvas.setAttribute('gamestate', 'play');
+     canvas.nextNumber();
+     lz.Timer.addTimer( new LzDelegate( canvas, "timerService" ), 1000 );
+   </method>
+   
+   <method name="nextNumber">
+      var j = Math.floor(Math.random()*canvas.numspan+1-canvas.min);
+      var k = digits[this.currentidx] - j;
+      if(k &gt;= 0)
+      {
+         problem.setAttribute("text", j + " + " + k);
+      }
+      else
+      {
+         problem.setAttribute("text", j + " " + k); 
+      }
+      canvas.setAttribute("currenttgt", digits[this.currentidx]);
+   </method>
+   
+   <method name="timerService">
+      canvas.setAttribute("time", this.time - 1);
+      if(this.time == 0)
+      {
+         canvas.setAttribute("gamestate", 'over');
+      }
+      else
+      {
+         lz.Timer.addTimer( new LzDelegate( canvas, "timerService" ), 1000 );
+      }     
+   </method>
+   
+</canvas>
